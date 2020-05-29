@@ -1,0 +1,106 @@
+// Servo Kütüpanesi Eklendi
+#include <Servo.h> 
+
+// Fiziksel Baðlantý pinleri tanýmlandý
+int SERVO_1_PIN = 9;
+int SERVO_2_PIN = 10;
+int SERVO_3_PIN = 11;
+
+// Her servo için bir servo objesi oluþtur
+Servo servo1;
+Servo servo2;
+Servo servo3;
+
+// Ortak Servo min ve max Pulse deðerleri
+int minPulse = 600;   // minimum servo pozisyon deðeri, us (microseconds)
+int maxPulse = 2400;  // maximum servo pozisyon deðeri, us
+boolean servosEnabled = false;  //servo gücü false
+
+// Servolar için kullanýlan deðerler
+int userInput[3];    // Serial iletiþimde kullanýlan 3 input
+int startbyte;       // Gelen deðerleri okumak için start biti
+int servo;           // Hangi servonun kullanýlacaðýný belirleyen deðiþken
+int pos;             // Servo açýsý 0 - 180 derece
+int i;               // iteratör
+
+// Tutucu ucu aktif etme pini
+int Tutucu = 13;
+int TutucuDurumu = LOW;
+
+void setup() 
+{ 
+  pinMode(Tutucu, OUTPUT);
+
+  // Open the serial connection, 9600 baud
+  Serial.begin(9600);
+} 
+
+void loop() 
+{ 
+  // Serial iletiþim için bekle (arabellekte min 3 byte)
+  if (Serial.available() > 2) {
+    // Ýlk byte oku
+    startbyte = Serial.read();
+    // Ýlk byte (255) ise iletiþimi baþlat ...
+    if (startbyte == 255) {
+      // ... sonraki 2 byte'ý oku
+      for (i=0;i<2;i++) {
+        userInput[i] = Serial.read();
+      }
+      // Ýlk byte = Servo için hareket mi geldi?
+      servo = userInput[0];
+      // Ýkinci byte = hangi pozisyon?
+      pos = userInput[1];
+      // Hatayý kontrol et
+      if (pos == 255) { servo = 255; }
+
+      // Uygun servoya yeni pozisyon ata
+      switch (servo) {
+        case 1:
+          servo1.write(pos);    // Servo1 'i yeni pozisyonuna harekete geçir
+          break;
+        case 2:
+          servo2.write(pos);
+          break;
+        case 3:
+          servo3.write(pos);
+          break;     
+
+        // Servolarý aktif yada pasifleþtir
+        case 99:
+          if (pos == 180 ) {  //aktif
+            if ( !servosEnabled ) {
+
+              attachServos();
+            }
+            TutucuDurumu = HIGH;
+          }
+          if (pos == 0) {    //pasif
+            
+            detachServos();
+            TutucuDurumu = LOW;
+          }
+          digitalWrite(Tutucu, TutucuDurumu);
+          break;
+      }
+    }
+  }
+}
+
+void attachServos() {
+  // Herbir servo nesnesini bir dijital(PWM) pinine takýldý.
+  servo1.attach(SERVO_1_PIN, minPulse, maxPulse);
+  servo2.attach(SERVO_2_PIN, minPulse, maxPulse);
+  servo3.attach(SERVO_3_PIN, minPulse, maxPulse);
+  servosEnabled = true;
+}
+
+void detachServos() {
+  servo1.detach();
+  servo2.detach();
+  servo3.detach();
+  servosEnabled = false;
+}
+  
+
+ 
